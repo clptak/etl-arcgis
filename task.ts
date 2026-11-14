@@ -21,6 +21,9 @@ const IncomingInput = Type.Object({
         Key: Type.String(),
         Value: Type.String()
     }))),
+    ARCGIS_VIDEO_FIELD: Type.Optional(Type.String({
+        description: 'Name of an attribute holding a video stream URL (e.g. m3u8). When set, it is copied to the CoT video property so CloudTAK opens the pop-up player.'
+    })),
     ARCGIS_PORTAL: Type.Optional(Type.String()),
     ARCGIS_USERNAME: Type.Optional(Type.String()),
     ARCGIS_PASSWORD: Type.Optional(Type.String()),
@@ -426,9 +429,17 @@ export default class Task extends ETL {
             dumper.on('feature', (feature) => {
                 feature.id = `layer-${layer.id}-${feature.id}`
 
+                const videoUrl = env.ARCGIS_VIDEO_FIELD
+                    ? feature.properties?.[env.ARCGIS_VIDEO_FIELD]
+                    : undefined;
+
                 feature.properties = {
                     metadata: feature.properties
                 };
+
+                if (typeof videoUrl === 'string' && videoUrl.trim().length) {
+                    feature.properties.video = { url: videoUrl.trim() };
+                }
 
                 if (feature.geometry.type.startsWith('Multi')) {
                     feature.geometry.coordinates.forEach((coords: any, idx: number) => {
